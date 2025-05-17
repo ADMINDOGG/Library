@@ -1,0 +1,1932 @@
+--[[
+    NeonSpace UI Library
+    A modern, futuristic UI library for Lua applications
+    Inspired by cyberpunk and futuristic designs
+]]
+
+local NeonSpace = {}
+NeonSpace.__index = NeonSpace
+
+-- Utility functions
+local Utility = {}
+
+function Utility:Create(instanceType, properties)
+    local instance = Instance.new(instanceType)
+    for property, value in pairs(properties) do
+        instance[property] = value
+    end
+    return instance
+end
+
+function Utility:Tween(instance, properties, duration, style, direction)
+    local tweenInfo = TweenInfo.new(duration or 0.5, style or Enum.EasingStyle.Quart, direction or Enum.EasingDirection.Out)
+    local tween = game:GetService("TweenService"):Create(instance, tweenInfo, properties)
+    tween:Play()
+    return tween
+end
+
+-- Color themes
+NeonSpace.Themes = {
+    Cyberpunk = {
+        Background = Color3.fromRGB(10, 10, 15),
+        Accent = Color3.fromRGB(0, 255, 170),
+        Text = Color3.fromRGB(255, 255, 255),
+        DarkText = Color3.fromRGB(180, 180, 180),
+        LightShade = Color3.fromRGB(30, 30, 45),
+        DarkShade = Color3.fromRGB(15, 15, 25)
+    },
+    Hologram = {
+        Background = Color3.fromRGB(5, 12, 20),
+        Accent = Color3.fromRGB(0, 170, 255),
+        Text = Color3.fromRGB(230, 240, 255),
+        DarkText = Color3.fromRGB(150, 170, 200),
+        LightShade = Color3.fromRGB(20, 30, 40),
+        DarkShade = Color3.fromRGB(10, 20, 30)
+    },
+    NeonNight = {
+        Background = Color3.fromRGB(10, 5, 15),
+        Accent = Color3.fromRGB(255, 0, 255),
+        Text = Color3.fromRGB(255, 255, 255),
+        DarkText = Color3.fromRGB(200, 180, 220),
+        LightShade = Color3.fromRGB(25, 15, 30),
+        DarkShade = Color3.fromRGB(15, 10, 20)
+    }
+}
+
+-- Initialize the library
+function NeonSpace.new(title, theme)
+    local self = setmetatable({}, NeonSpace)
+    self.Theme = NeonSpace.Themes[theme] or NeonSpace.Themes.Cyberpunk
+    self.Windows = {}
+    self:CreateInterface(title)
+    return self
+end
+
+-- Create the main interface
+function NeonSpace:CreateInterface(title)
+    -- Create screen gui
+    self.ScreenGui = Utility:Create("ScreenGui", {
+        Name = "NeonSpaceUI",
+        Parent = game:GetService("CoreGui"),
+        ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    })
+    
+    -- Create blur effect
+    self.Blur = Utility:Create("BlurEffect", {
+        Name = "NeonSpaceBlur",
+        Parent = game:GetService("Lighting"),
+        Size = 0
+    })
+    
+    -- Main container
+    self.Main = Utility:Create("Frame", {
+        Name = "Main",
+        Parent = self.ScreenGui,
+        BackgroundColor3 = self.Theme.Background,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.new(0, 600, 0, 400),
+        ClipsDescendants = true
+    })
+    
+    -- Add rounded corners
+    Utility:Create("UICorner", {
+        Parent = self.Main,
+        CornerRadius = UDim.new(0, 10)
+    })
+    
+    -- Add glow effect
+    local glow = Utility:Create("ImageLabel", {
+        Name = "Glow",
+        Parent = self.Main,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.new(1.1, 0, 1.1, 0),
+        ZIndex = 0,
+        Image = "rbxassetid://4996891970", -- Radial gradient
+        ImageColor3 = self.Theme.Accent,
+        ImageTransparency = 0.9
+    })
+    
+    -- Title bar
+    self.TitleBar = Utility:Create("Frame", {
+        Name = "TitleBar",
+        Parent = self.Main,
+        BackgroundColor3 = self.Theme.DarkShade,
+        BorderSizePixel = 0,
+        Size = UDim2.new(1, 0, 0, 40)
+    })
+    
+    -- Title text
+    Utility:Create("TextLabel", {
+        Name = "Title",
+        Parent = self.TitleBar,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 20, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        Font = Enum.Font.GothamBold,
+        Text = title,
+        TextColor3 = self.Theme.Accent,
+        TextSize = 18,
+        TextXAlignment = Enum.TextXAlignment.Left
+    })
+    
+    -- Close button
+    local closeBtn = Utility:Create("TextButton", {
+        Name = "CloseButton",
+        Parent = self.TitleBar,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -30, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.new(0, 24, 0, 24),
+        Font = Enum.Font.GothamBold,
+        Text = "×",
+        TextColor3 = self.Theme.Text,
+        TextSize = 24
+    })
+    
+    -- Tab container
+    self.TabContainer = Utility:Create("Frame", {
+        Name = "TabContainer",
+        Parent = self.Main,
+        BackgroundColor3 = self.Theme.LightShade,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 40),
+        Size = UDim2.new(0, 150, 1, -40)
+    })
+    
+    -- Tab buttons container
+    self.TabButtons = Utility:Create("ScrollingFrame", {
+        Name = "TabButtons",
+        Parent = self.TabContainer,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 10),
+        Size = UDim2.new(1, 0, 1, -20),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ScrollBarThickness = 2,
+        ScrollBarImageColor3 = self.Theme.Accent,
+        BorderSizePixel = 0
+    })
+    
+    -- Layout for tab buttons
+    Utility:Create("UIListLayout", {
+        Parent = self.TabButtons,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 8)
+    })
+    
+    -- Content container
+    self.ContentContainer = Utility:Create("Frame", {
+        Name = "ContentContainer",
+        Parent = self.Main,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 150, 0, 40),
+        Size = UDim2.new(1, -150, 1, -40)
+    })
+    
+    -- Visual effects
+    self:CreateParticles()
+    self:SetupDragging()
+    
+    -- Animation in
+    self.Main.Size = UDim2.new(0, 0, 0, 0)
+    Utility:Tween(self.Main, {Size = UDim2.new(0, 600, 0, 400)}, 0.6, Enum.EasingStyle.Back)
+    Utility:Tween(self.Blur, {Size = 10}, 0.6)
+    
+    -- Close button functionality
+    closeBtn.MouseButton1Click:Connect(function()
+        self:Destroy()
+    })
+    
+    return self
+end
+
+-- Create particle effects
+function NeonSpace:CreateParticles()
+    local particleContainer = Utility:Create("Frame", {
+        Name = "ParticleContainer",
+        Parent = self.Main,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        ZIndex = 0
+    })
+    
+    -- Create some animated particles
+    for i = 1, 15 do
+        local size = math.random(2, 5)
+        local particle = Utility:Create("Frame", {
+            Parent = particleContainer,
+            BackgroundColor3 = self.Theme.Accent,
+            BackgroundTransparency = math.random(50, 90) / 100,
+            BorderSizePixel = 0,
+            Position = UDim2.new(math.random(0, 100) / 100, 0, math.random(0, 100) / 100, 0),
+            Size = UDim2.new(0, size, 0, size),
+            ZIndex = 1
+        })
+        
+        -- Round the particles
+        Utility:Create("UICorner", {
+            Parent = particle,
+            CornerRadius = UDim.new(1, 0)
+        })
+        
+        -- Animate the particles
+        spawn(function()
+            while particle.Parent do
+                local xPos = math.random(0, 100) / 100
+                local yPos = math.random(0, 100) / 100
+                local duration = math.random(3, 8)
+                
+                Utility:Tween(particle, {
+                    Position = UDim2.new(xPos, 0, yPos, 0),
+                    BackgroundTransparency = math.random(50, 90) / 100
+                }, duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut)
+                
+                wait(duration)
+            end
+        end)
+    end
+end
+
+-- Setup dragging
+function NeonSpace:SetupDragging()
+    local UserInputService = game:GetService("UserInputService")
+    local dragging, dragInput, dragStart, startPos
+    
+    self.TitleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = self.Main.Position
+            
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    
+    self.TitleBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            Utility:Tween(self.Main, {Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)}, 0.1)
+        end
+    end)
+end
+
+-- Create a window
+function NeonSpace:CreateWindow(name, icon)
+    local window = {}
+    window.Name = name
+    window.Icon = icon or "rbxassetid://7733715400" -- Default icon
+    window.Tabs = {}
+    window.Sections = {}
+    window.Elements = {}
+    
+    -- Create tab button
+    local tabButton = Utility:Create("TextButton", {
+        Name = name,
+        Parent = self.TabButtons,
+        BackgroundColor3 = self.Theme.DarkShade,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0.9, 0, 0, 36),
+        Font = Enum.Font.Gotham,
+        Text = "  " .. name,
+        TextColor3 = self.Theme.Text,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        AutoButtonColor = false
+    })
+    
+    -- Add rounded corners to tab button
+    Utility:Create("UICorner", {
+        Parent = tabButton,
+        CornerRadius = UDim.new(0, 6)
+    })
+    
+    -- Add icon to tab button
+    local iconImage = Utility:Create("ImageLabel", {
+        Name = "Icon",
+        Parent = tabButton,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 10, 0.5, 0),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Size = UDim2.new(0, 16, 0, 16),
+        Image = icon or "rbxassetid://7733715400",
+        ImageColor3 = self.Theme.Accent
+    })
+    
+    -- Add selection indicator
+    local selectionIndicator = Utility:Create("Frame", {
+        Name = "SelectionIndicator",
+        Parent = tabButton,
+        BackgroundColor3 = self.Theme.Accent,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(1, 0.5),
+        Size = UDim2.new(0, 0, 0.7, 0),
+        Visible = false
+    })
+    
+    -- Add rounded corners to indicator
+    Utility:Create("UICorner", {
+        Parent = selectionIndicator,
+        CornerRadius = UDim.new(0, 4)
+    })
+    
+    -- Create content frame
+    local contentFrame = Utility:Create("ScrollingFrame", {
+        Name = name .. "Content",
+        Parent = self.ContentContainer,
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = self.Theme.Accent,
+        Visible = false
+    })
+    
+    -- Add padding
+    Utility:Create("UIPadding", {
+        Parent = contentFrame,
+        PaddingLeft = UDim.new(0, 15),
+        PaddingRight = UDim.new(0, 15),
+        PaddingTop = UDim.new(0, 15),
+        PaddingBottom = UDim.new(0, 15)
+    })
+    
+    -- Add auto-sizing list layout
+    local listLayout = Utility:Create("UIListLayout", {
+        Parent = contentFrame,
+        HorizontalAlignment = Enum.HorizontalAlignment.Center,
+        SortOrder = Enum.SortOrder.LayoutOrder,
+        Padding = UDim.new(0, 15)
+    })
+    
+    -- Update canvas size when content changes
+    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        contentFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 30)
+    end)
+    
+    -- Tab button click handler
+    tabButton.MouseButton1Click:Connect(function()
+        self:SelectWindow(window)
+    end)
+    
+    -- Hover effects
+    tabButton.MouseEnter:Connect(function()
+        if contentFrame.Visible == false then
+            Utility:Tween(tabButton, {BackgroundColor3 = self.Theme.LightShade}, 0.2)
+        end
+    end)
+    
+    tabButton.MouseLeave:Connect(function()
+        if contentFrame.Visible == false then
+            Utility:Tween(tabButton, {BackgroundColor3 = self.Theme.DarkShade}, 0.2)
+        end
+    end)
+    
+    -- Store references
+    window.Button = tabButton
+    window.Content = contentFrame
+    window.Indicator = selectionIndicator
+    window.Selected = false
+    
+    -- Add to windows list
+    table.insert(self.Windows, window)
+    
+    -- Section creation function
+    function window:CreateSection(sectionName)
+        local section = {}
+        section.Name = sectionName
+        section.Elements = {}
+        
+        -- Create section frame
+        local sectionFrame = Utility:Create("Frame", {
+            Name = sectionName .. "Section",
+            Parent = contentFrame,
+            BackgroundColor3 = NeonSpace.Theme.LightShade,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 0, 40) -- Will be resized based on content
+        })
+        
+        -- Add rounded corners
+        Utility:Create("UICorner", {
+            Parent = sectionFrame,
+            CornerRadius = UDim.new(0, 8)
+        })
+        
+        -- Add section title
+        local sectionTitle = Utility:Create("TextLabel", {
+            Name = "Title",
+            Parent = sectionFrame,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 15, 0, 0),
+            Size = UDim2.new(1, -30, 0, 35),
+            Font = Enum.Font.GothamSemibold,
+            Text = sectionName,
+            TextColor3 = NeonSpace.Theme.Accent,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        
+        -- Add divider
+        local divider = Utility:Create("Frame", {
+            Name = "Divider",
+            Parent = sectionFrame,
+            BackgroundColor3 = NeonSpace.Theme.Accent,
+            BackgroundTransparency = 0.7,
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 15, 0, 35),
+            Size = UDim2.new(1, -30, 0, 1)
+        })
+        
+        -- Container for section elements
+        local elementsContainer = Utility:Create("Frame", {
+            Name = "ElementsContainer",
+            Parent = sectionFrame,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 15, 0, 45),
+            Size = UDim2.new(1, -30, 1, -55)
+        })
+        
+        -- List layout for elements
+        local elementLayout = Utility:Create("UIListLayout", {
+            Parent = elementsContainer,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 12)
+        })
+        
+        -- Update section size based on elements
+        elementLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            sectionFrame.Size = UDim2.new(1, 0, 0, elementLayout.AbsoluteContentSize.Y + 60)
+        end)
+        
+        -- Store references
+        section.Frame = sectionFrame
+        section.Container = elementsContainer
+        
+        -- Button creation function
+        function section:CreateButton(buttonText, callback)
+            local button = {}
+            
+            -- Create button
+            local buttonFrame = Utility:Create("TextButton", {
+                Name = buttonText .. "Button",
+                Parent = elementsContainer,
+                BackgroundColor3 = NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Size = UDim2.new(1, 0, 0, 36),
+                Font = Enum.Font.Gotham,
+                Text = buttonText,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                AutoButtonColor = false
+            })
+            
+            -- Add rounded corners
+            Utility:Create("UICorner", {
+                Parent = buttonFrame,
+                CornerRadius = UDim.new(0, 6)
+            })
+            
+            -- Add glow effect
+            local buttonGlow = Utility:Create("ImageLabel", {
+                Name = "Glow",
+                Parent = buttonFrame,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(1, 10, 1, 10),
+                ZIndex = 0,
+                Image = "rbxassetid://4996891970",
+                ImageColor3 = NeonSpace.Theme.Accent,
+                ImageTransparency = 0.9
+            })
+            
+            -- Click effect
+            buttonFrame.MouseButton1Down:Connect(function()
+                Utility:Tween(buttonFrame, {BackgroundColor3 = NeonSpace.Theme.Accent}, 0.1)
+                Utility:Tween(buttonFrame, {TextColor3 = Color3.fromRGB(20, 20, 20)}, 0.1)
+                
+                spawn(function()
+                    wait(0.1)
+                    Utility:Tween(buttonFrame, {BackgroundColor3 = NeonSpace.Theme.DarkShade}, 0.1)
+                    Utility:Tween(buttonFrame, {TextColor3 = NeonSpace.Theme.Text}, 0.1)
+                end)
+                
+                -- Call callback function
+                if callback then
+                    callback()
+                end
+            end)
+            
+            -- Hover effects
+            buttonFrame.MouseEnter:Connect(function()
+                Utility:Tween(buttonFrame, {BackgroundColor3 = NeonSpace.Theme.LightShade}, 0.2)
+                Utility:Tween(buttonGlow, {ImageTransparency = 0.7}, 0.2)
+            end)
+            
+            buttonFrame.MouseLeave:Connect(function()
+                Utility:Tween(buttonFrame, {BackgroundColor3 = NeonSpace.Theme.DarkShade}, 0.2)
+                Utility:Tween(buttonGlow, {ImageTransparency = 0.9}, 0.2)
+            end)
+            
+            button.Instance = buttonFrame
+            table.insert(section.Elements, button)
+            return button
+        end
+        
+        -- Toggle creation function
+        function section:CreateToggle(toggleText, default, callback)
+            local toggle = {}
+            toggle.Value = default or false
+            
+            -- Create toggle frame
+            local toggleFrame = Utility:Create("Frame", {
+                Name = toggleText .. "Toggle",
+                Parent = elementsContainer,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 30)
+            })
+            
+            -- Toggle text
+            local textLabel = Utility:Create("TextLabel", {
+                Name = "Label",
+                Parent = toggleFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, -50, 1, 0),
+                Font = Enum.Font.Gotham,
+                Text = toggleText,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            
+            -- Toggle switch background
+            local switchBg = Utility:Create("Frame", {
+                Name = "SwitchBackground",
+                Parent = toggleFrame,
+                BackgroundColor3 = toggle.Value and NeonSpace.Theme.Accent or NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Position = UDim2.new(1, -40, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(0, 40, 0, 20)
+            })
+            
+            -- Rounded corners for switch
+            Utility:Create("UICorner", {
+                Parent = switchBg,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- Toggle knob
+            local knob = Utility:Create("Frame", {
+                Name = "Knob",
+                Parent = switchBg,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderSizePixel = 0,
+                Position = toggle.Value and UDim2.new(0, 22, 0.5, 0) or UDim2.new(0, 2, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(0, 16, 0, 16)
+            })
+            
+            -- Rounded corners for knob
+            Utility:Create("UICorner", {
+                Parent = knob,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- Switch interaction
+            switchBg.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    toggle.Value = not toggle.Value
+                    
+                    -- Knob animation
+                    Utility:Tween(knob, {
+                        Position = toggle.Value and UDim2.new(0, 22, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
+                    }, 0.2)
+                    
+                    -- Color animation
+                    Utility:Tween(switchBg, {
+                        BackgroundColor3 = toggle.Value and NeonSpace.Theme.Accent or NeonSpace.Theme.DarkShade
+                    }, 0.2)
+                    
+                    -- Call callback
+                    if callback then
+                        callback(toggle.Value)
+                    end
+                end
+            end)
+            
+            -- Also allow clicking on text
+            textLabel.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    toggle.Value = not toggle.Value
+                    
+                    -- Knob animation
+                    Utility:Tween(knob, {
+                        Position = toggle.Value and UDim2.new(0, 22, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
+                    }, 0.2)
+                    
+                    -- Color animation
+                    Utility:Tween(switchBg, {
+                        BackgroundColor3 = toggle.Value and NeonSpace.Theme.Accent or NeonSpace.Theme.DarkShade
+                    }, 0.2)
+                    
+                    -- Call callback
+                    if callback then
+                        callback(toggle.Value)
+                    end
+                end
+            end)
+            
+            function toggle:SetValue(value)
+                toggle.Value = value
+                
+                -- Knob animation
+                Utility:Tween(knob, {
+                    Position = toggle.Value and UDim2.new(0, 22, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
+                }, 0.2)
+                
+                -- Color animation
+                Utility:Tween(switchBg, {
+                    BackgroundColor3 = toggle.Value and NeonSpace.Theme.Accent or NeonSpace.Theme.DarkShade
+                }, 0.2)
+                
+                -- Call callback
+                if callback then
+                    callback(toggle.Value)
+                end
+            end
+            
+            toggle.Instance = toggleFrame
+            table.insert(section.Elements, toggle)
+            return toggle
+        end
+        
+        -- Slider creation function
+        function section:CreateSlider(sliderText, min, max, default, callback)
+            local slider = {}
+            slider.Min = min or 0
+            slider.Max = max or 100
+            slider.Value = default or slider.Min
+            
+            -- Create slider frame
+            local sliderFrame = Utility:Create("Frame", {
+                Name = sliderText .. "Slider",
+                Parent = elementsContainer,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 50)
+            })
+            
+            -- Slider text
+            local textLabel = Utility:Create("TextLabel", {
+                Name = "Label",
+                Parent = sliderFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, 0, 0, 20),
+                Font = Enum.Font.Gotham,
+                Text = sliderText,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            
+            -- Value display
+            local valueDisplay = Utility:Create("TextLabel", {
+                Name = "Value",
+                Parent = sliderFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(1, -40, 0, 0),
+                Size = UDim2.new(0, 40, 0, 20),
+                Font = Enum.Font.GothamSemibold,
+                Text = tostring(slider.Value),
+                TextColor3 = NeonSpace.Theme.Accent,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Right
+            })
+            
+            -- Slider background
+            local sliderBg = Utility:Create("Frame", {
+                Name = "SliderBackground",
+                Parent = sliderFrame,
+                BackgroundColor3 = NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 30),
+                Size = UDim2.new(1, 0, 0, 6)
+            })
+            
+            -- Rounded corners for slider bg
+            Utility:Create("UICorner", {
+                Parent = sliderBg,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- Slider fill
+            local sliderFill = Utility:Create("Frame", {
+                Name = "SliderFill",
+                Parent = sliderBg,
+                BackgroundColor3 = NeonSpace.Theme.Accent,
+                BorderSizePixel = 0,
+                Size = UDim2.new((slider.Value - slider.Min) / (slider.Max - slider.Min), 0, 1, 0)
+            })
+            
+            -- Rounded corners for slider fill
+            Utility:Create("UICorner", {
+                Parent = sliderFill,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- Slider knob
+            local knob = Utility:Create("Frame", {
+                Name = "Knob",
+                Parent = sliderFill,
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderSizePixel = 0,
+                Position = UDim2.new(1, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(0, 12, 0, 12)
+            })
+            
+            -- Glow effect for knob
+            local knobGlow = Utility:Create("ImageLabel", {
+                Name = "Glow",
+                Parent = knob,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0.5, 0, 0.5, 0),
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                Size = UDim2.new(1.5, 0, 1.5, 0),
+                Image = "rbxassetid://4996891970",
+                ImageColor3 = NeonSpace.Theme.Accent,
+                ImageTransparency = 0.5
+            })
+            
+            -- Rounded corners for knob
+            Utility:Create("UICorner", {
+                Parent = knob,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- Slider interaction
+            local function updateSlider(input)
+                local relativePos = math.clamp((input.Position.X - sliderBg.AbsolutePosition.X) / sliderBg.AbsoluteSize.X, 0, 1)
+                local value = math.floor((relativePos * (slider.Max - slider.Min)) + slider.Min)
+                
+                -- Update slider fill
+                sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
+                
+                -- Update value
+                slider.Value = value
+                valueDisplay.Text = tostring(value)
+                
+                -- Call callback
+                if callback then
+                    callback(value)
+                end
+            end
+            
+            sliderBg.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    updateSlider(input)
+                    
+                    -- Track mouse movement
+                    local connection
+                    connection = game:GetService("UserInputService").InputChanged:Connect(function(newInput)
+                        if newInput.UserInputType == Enum.UserInputType.MouseMovement then
+                            updateSlider(newInput)
+                        end
+                    end)
+                    
+                    -- Stop tracking when mouse button is released
+                    game:GetService("UserInputService").InputEnded:Connect(function(newInput)
+                        if newInput.UserInputType == Enum.UserInputType.MouseButton1 then
+                            if connection then
+                                connection:Disconnect()
+                            end
+                        end
+                    end)
+                end
+            end)
+            
+            -- Public API
+            function slider:SetValue(value)
+                value = math.clamp(value, slider.Min, slider.Max)
+                slider.Value = value
+                
+                -- Update display
+                valueDisplay.Text = tostring(value)
+                
+                -- Update fill
+                local relativePos = (value - slider.Min) / (slider.Max - slider.Min)
+                sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
+                
+                -- Call callback
+                if callback then
+                    callback(value)
+                end
+            end
+            
+            slider.Instance = sliderFrame
+            table.insert(section.Elements, slider)
+            return slider
+        end
+        
+        -- Dropdown creation function
+        function section:CreateDropdown(dropdownText, options, default, callback)
+            local dropdown = {}
+            dropdown.Options = options or {}
+            dropdown.Value = default or (options and options[1] or "")
+            dropdown.Open = false
+            
+            -- Create dropdown frame
+            local dropdownFrame = Utility:Create("Frame", {
+                Name = dropdownText .. "Dropdown",
+                Parent = elementsContainer,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 40) -- Will be resized when open
+            })
+            
+            -- Dropdown text
+            local textLabel = Utility:Create("TextLabel", {
+                Name = "Label",
+                Parent = dropdownFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, 0, 0, 20),
+                Font = Enum.Font.Gotham,
+                Text = dropdownText,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            
+            -- Selected value display
+            local selectedDisplay = Utility:Create("TextButton", {
+                Name = "Selected",
+                Parent = dropdownFrame,
+                BackgroundColor3 = NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 25),
+                Size = UDim2.new(1, 0, 0, 30),
+                Font = Enum.Font.Gotham,
+                Text = "  " .. dropdown.Value,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                AutoButtonColor = false
+            })
+            
+            -- Rounded corners for selected display
+            Utility:Create("UICorner", {
+                Parent = selectedDisplay,
+                CornerRadius = UDim.new(0, 6)
+            })
+            
+            -- Arrow icon
+            local arrowIcon = Utility:Create("ImageLabel", {
+                Name = "Arrow",
+                Parent = selectedDisplay,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(1, -25, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(0, 16, 0, 16),
+                Image = "rbxassetid://6031091004", -- Arrow icon
+                ImageColor3 = NeonSpace.Theme.Accent,
+                Rotation = 0
+            })
+            
+            -- Options container
+            local optionsContainer = Utility:Create("Frame", {
+                Name = "OptionsContainer",
+                Parent = dropdownFrame,
+                BackgroundColor3 = NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 60),
+                Size = UDim2.new(1, 0, 0, 0), -- Will be resized based on options
+                ClipsDescendants = true,
+                Visible = false
+            })
+            
+            -- Rounded corners for options container
+            Utility:Create("UICorner", {
+                Parent = optionsContainer,
+                CornerRadius = UDim.new(0, 6)
+            })
+            
+            -- Options list layout
+            local optionsLayout = Utility:Create("UIListLayout", {
+                Parent = optionsContainer,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Padding = UDim.new(0, 5)
+            })
+            
+            -- Add padding
+            Utility:Create("UIPadding", {
+                Parent = optionsContainer,
+                PaddingLeft = UDim.new(0, 5),
+                PaddingRight = UDim.new(0, 5),
+                PaddingTop = UDim.new(0, 5),
+                PaddingBottom = UDim.new(0, 5)
+            })
+            
+            -- Populate options
+            local function populateOptions()
+                -- Clear existing options
+                for _, child in pairs(optionsContainer:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child:Destroy()
+                    end
+                end
+                
+                -- Add options
+                for i, option in ipairs(dropdown.Options) do
+                    local optionButton = Utility:Create("TextButton", {
+                        Name = option,
+                        Parent = optionsContainer,
+                        BackgroundColor3 = NeonSpace.Theme.LightShade,
+                        BackgroundTransparency = 0.7,
+                        BorderSizePixel = 0,
+                        Size = UDim2.new(1, 0, 0, 25),
+                        Font = Enum.Font.Gotham,
+                        Text = option,
+                        TextColor3 = NeonSpace.Theme.Text,
+                        TextSize = 14,
+                        AutoButtonColor = false
+                    })
+                    
+                    -- Rounded corners for option button
+                    Utility:Create("UICorner", {
+                        Parent = optionButton,
+                        CornerRadius = UDim.new(0, 4)
+                    })
+                    
+                    -- Option selection
+                    optionButton.MouseButton1Click:Connect(function()
+                        dropdown.Value = option
+                        selectedDisplay.Text = "  " .. option
+                        
+                        -- Toggle dropdown
+                        dropdown:Toggle()
+                        
+                        -- Call callback
+                        if callback then
+                            callback(option)
+                        end
+                    end)
+                    
+                    -- Hover effect
+                    optionButton.MouseEnter:Connect(function()
+                        Utility:Tween(optionButton, {BackgroundTransparency = 0.5}, 0.2)
+                    end)
+                    
+                    optionButton.MouseLeave:Connect(function()
+                        Utility:Tween(optionButton, {BackgroundTransparency = 0.7}, 0.2)
+                    end)
+                end
+                
+                -- Update container size
+                optionsContainer.Size = UDim2.new(1, 0, 0, #dropdown.Options * 30 + 10)
+            end
+            
+            -- Populate initial options
+            populateOptions()
+            
+            -- Toggle dropdown
+            function dropdown:Toggle()
+                dropdown.Open = not dropdown.Open
+                
+                -- Rotate arrow
+                Utility:Tween(arrowIcon, {Rotation = dropdown.Open and 180 or 0}, 0.2)
+                
+                -- Show/hide options
+                optionsContainer.Visible = dropdown.Open
+                
+                -- Update frame size
+                Utility:Tween(dropdownFrame, {
+                    Size = UDim2.new(1, 0, 0, dropdown.Open and (70 + optionsContainer.Size.Y.Offset) or 60)
+                }, 0.2)
+            end
+            
+            -- Selected button click
+            selectedDisplay.MouseButton1Click:Connect(function()
+                dropdown:Toggle()
+            end)
+            
+            -- Hover effect
+            selectedDisplay.MouseEnter:Connect(function()
+                Utility:Tween(selectedDisplay, {BackgroundColor3 = NeonSpace.Theme.LightShade}, 0.2)
+            end)
+            
+            selectedDisplay.MouseLeave:Connect(function()
+                Utility:Tween(selectedDisplay, {BackgroundColor3 = NeonSpace.Theme.DarkShade}, 0.2)
+            end)
+            
+            -- Update options
+            function dropdown:UpdateOptions(newOptions)
+                dropdown.Options = newOptions
+                populateOptions()
+                
+                -- Reset value if not in new options
+                local found = false
+                for _, option in ipairs(newOptions) do
+                    if option == dropdown.Value then
+                        found = true
+                        break
+                    end
+                end
+                
+                if not found and #newOptions > 0 then
+                    dropdown.Value = newOptions[1]
+                    selectedDisplay.Text = "  " .. dropdown.Value
+                    
+                    -- Call callback
+                    if callback then
+                        callback(dropdown.Value)
+                    end
+                end
+            end
+            
+            -- Set value
+            function dropdown:SetValue(value)
+                -- Check if value exists in options
+                local found = false
+                for _, option in ipairs(dropdown.Options) do
+                    if option == value then
+                        found = true
+                        break
+                    end
+                end
+                
+                if found then
+                    dropdown.Value = value
+                    selectedDisplay.Text = "  " .. value
+                    
+                    -- Call callback
+                    if callback then
+                        callback(value)
+                    end
+                end
+            end
+            
+            dropdown.Instance = dropdownFrame
+            table.insert(section.Elements, dropdown)
+            return dropdown
+        end
+        
+        -- Input field creation function
+        function section:CreateInput(inputText, placeholderText, callback)
+            local input = {}
+            input.Value = ""
+            
+            -- Create input frame
+            local inputFrame = Utility:Create("Frame", {
+                Name = inputText .. "Input",
+                Parent = elementsContainer,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 60)
+            })
+            
+            -- Input text
+            local textLabel = Utility:Create("TextLabel", {
+                Name = "Label",
+                Parent = inputFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, 0, 0, 20),
+                Font = Enum.Font.Gotham,
+                Text = inputText,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            
+            -- Input box background
+            local inputBg = Utility:Create("Frame", {
+                Name = "InputBackground",
+                Parent = inputFrame,
+                BackgroundColor3 = NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 25),
+                Size = UDim2.new(1, 0, 0, 35)
+            })
+            
+            -- Rounded corners for input box
+            Utility:Create("UICorner", {
+                Parent = inputBg,
+                CornerRadius = UDim.new(0, 6)
+            })
+            
+            -- Input box
+            local inputBox = Utility:Create("TextBox", {
+                Name = "InputBox",
+                Parent = inputBg,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 10, 0, 0),
+                Size = UDim2.new(1, -20, 1, 0),
+                Font = Enum.Font.Gotham,
+                PlaceholderText = placeholderText or "Type here...",
+                PlaceholderColor3 = Color3.fromRGB(120, 120, 120),
+                Text = "",
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                ClearTextOnFocus = false
+            })
+            
+            -- Input border
+            local inputBorder = Utility:Create("Frame", {
+                Name = "Border",
+                Parent = inputBg,
+                BackgroundColor3 = NeonSpace.Theme.Accent,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 1, 0),
+                Size = UDim2.new(1, 0, 0, 1),
+                BackgroundTransparency = 0.5
+            })
+            
+            -- Input events
+            inputBox.Focused:Connect(function()
+                Utility:Tween(inputBorder, {BackgroundTransparency = 0}, 0.2)
+                Utility:Tween(inputBg, {BackgroundColor3 = NeonSpace.Theme.LightShade}, 0.2)
+            end)
+            
+            inputBox.FocusLost:Connect(function(enterPressed)
+                Utility:Tween(inputBorder, {BackgroundTransparency = 0.5}, 0.2)
+                Utility:Tween(inputBg, {BackgroundColor3 = NeonSpace.Theme.DarkShade}, 0.2)
+                
+                -- Update value
+                input.Value = inputBox.Text
+                
+                -- Call callback
+                if callback and enterPressed then
+                    callback(inputBox.Text)
+                end
+            end)
+            
+            -- Set value function
+            function input:SetValue(value)
+                input.Value = value
+                inputBox.Text = value
+                
+                -- Call callback
+                if callback then
+                    callback(value)
+                end
+            end
+            
+            input.Instance = inputFrame
+            table.insert(section.Elements, input)
+            return input
+        end
+        
+        -- Label creation function
+        function section:CreateLabel(labelText)
+            local label = {}
+            
+            -- Create label frame
+            local labelFrame = Utility:Create("Frame", {
+                Name = "Label",
+                Parent = elementsContainer,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 20)
+            })
+            
+            -- Label text
+            local textLabel = Utility:Create("TextLabel", {
+                Name = "Text",
+                Parent = labelFrame,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 1, 0),
+                Font = Enum.Font.Gotham,
+                Text = labelText,
+                TextColor3 = NeonSpace.Theme.DarkText,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                TextWrapped = true
+            })
+            
+            -- Update text function
+            function label:UpdateText(newText)
+                textLabel.Text = newText
+            end
+            
+            label.Instance = labelFrame
+            table.insert(section.Elements, label)
+            return label
+        end
+        
+        -- Color picker creation function
+        function section:CreateColorPicker(colorText, default, callback)
+            local colorPicker = {}
+            colorPicker.Value = default or Color3.fromRGB(255, 255, 255)
+            colorPicker.Open = false
+            
+            -- Create color picker frame
+            local colorFrame = Utility:Create("Frame", {
+                Name = colorText .. "ColorPicker",
+                Parent = elementsContainer,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 40) -- Will be resized when open
+            })
+            
+            -- Color text
+            local textLabel = Utility:Create("TextLabel", {
+                Name = "Label",
+                Parent = colorFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 0),
+                Size = UDim2.new(1, -60, 1, 0),
+                Font = Enum.Font.Gotham,
+                Text = colorText,
+                TextColor3 = NeonSpace.Theme.Text,
+                TextSize = 14,
+                TextXAlignment = Enum.TextXAlignment.Left
+            })
+            
+            -- Color display
+            local colorDisplay = Utility:Create("Frame", {
+                Name = "ColorDisplay",
+                Parent = colorFrame,
+                BackgroundColor3 = colorPicker.Value,
+                BorderSizePixel = 0,
+                Position = UDim2.new(1, -50, 0.5, 0),
+                AnchorPoint = Vector2.new(0, 0.5),
+                Size = UDim2.new(0, 40, 0, 24)
+            })
+            
+            -- Rounded corners for color display
+            Utility:Create("UICorner", {
+                Parent = colorDisplay,
+                CornerRadius = UDim.new(0, 6)
+            })
+            
+            -- Border effect
+            local border = Utility:Create("UIStroke", {
+                Parent = colorDisplay,
+                Color = NeonSpace.Theme.LightShade,
+                Thickness = 1
+            })
+            
+            -- Color picker container
+            local pickerContainer = Utility:Create("Frame", {
+                Name = "PickerContainer",
+                Parent = colorFrame,
+                BackgroundColor3 = NeonSpace.Theme.DarkShade,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 0, 0, 45),
+                Size = UDim2.new(1, 0, 0, 180),
+                Visible = false,
+                ClipsDescendants = true
+            })
+            
+            -- Rounded corners for picker container
+            Utility:Create("UICorner", {
+                Parent = pickerContainer,
+                CornerRadius = UDim.new(0, 6)
+            })
+            
+            -- Color saturation/value square
+            local saturationValue = Utility:Create("ImageLabel", {
+                Name = "SaturationValue",
+                Parent = pickerContainer,
+                BackgroundColor3 = Color3.fromHSV(1, 1, 1),
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 10, 0, 10),
+                Size = UDim2.new(1, -80, 0, 120),
+                Image = "rbxassetid://4155801252" -- Saturation/value square
+            })
+            
+            -- Rounded corners for saturation/value
+            Utility:Create("UICorner", {
+                Parent = saturationValue,
+                CornerRadius = UDim.new(0, 4)
+            })
+            
+            -- Saturation/value selector
+            local svSelector = Utility:Create("Frame", {
+                Name = "Selector",
+                Parent = saturationValue,
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderColor3 = Color3.fromRGB(0, 0, 0),
+                BorderSizePixel = 1,
+                Position = UDim2.new(1, 0, 0, 0), -- Will be updated based on color
+                Size = UDim2.new(0, 10, 0, 10)
+            })
+            
+            -- Rounded corners for selector
+            Utility:Create("UICorner", {
+                Parent = svSelector,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- Hue slider
+            local hueSlider = Utility:Create("ImageLabel", {
+                Name = "HueSlider",
+                Parent = pickerContainer,
+                BackgroundTransparency = 1,
+                BorderSizePixel = 0,
+                Position = UDim2.new(1, -60, 0, 10),
+                Size = UDim2.new(0, 20, 0, 120),
+                Image = "rbxassetid://3641079629" -- Hue slider
+            })
+            
+            -- Rounded corners for hue slider
+            Utility:Create("UICorner", {
+                Parent = hueSlider,
+                CornerRadius = UDim.new(0, 4)
+            })
+            
+            -- Hue selector
+            local hueSelector = Utility:Create("Frame", {
+                Name = "Selector",
+                Parent = hueSlider,
+                AnchorPoint = Vector2.new(0.5, 0.5),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                BorderColor3 = Color3.fromRGB(0, 0, 0),
+                BorderSizePixel = 1,
+                Position = UDim2.new(0.5, 0, 0, 0), -- Will be updated based on hue
+                Size = UDim2.new(1, 6, 0, 6)
+            })
+            
+            -- Rounded corners for hue selector
+            Utility:Create("UICorner", {
+                Parent = hueSelector,
+                CornerRadius = UDim.new(1, 0)
+            })
+            
+            -- RGB input fields
+            local rgbInputs = {}
+            local labels = {"R:", "G:", "B:"}
+            
+            for i, label in ipairs(labels) do
+                local inputFrame = Utility:Create("Frame", {
+                    Name = label .. "Input",
+                    Parent = pickerContainer,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 10 + (i-1) * 65, 0, 140),
+                    Size = UDim2.new(0, 60, 0, 30)
+                })
+                
+                -- Label
+                Utility:Create("TextLabel", {
+                    Name = "Label",
+                    Parent = inputFrame,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 0, 0, 0),
+                    Size = UDim2.new(0, 15, 1, 0),
+                    Font = Enum.Font.GothamBold,
+                    Text = label,
+                    TextColor3 = NeonSpace.Theme.Text,
+                    TextSize = 14
+                })
+                
+                -- Input box background
+                local inputBg = Utility:Create("Frame", {
+                    Name = "InputBg",
+                    Parent = inputFrame,
+                    BackgroundColor3 = NeonSpace.Theme.LightShade,
+                    BorderSizePixel = 0,
+                    Position = UDim2.new(0, 20, 0, 0),
+                    Size = UDim2.new(0, 40, 1, 0)
+                })
+                
+                -- Rounded corners for input bg
+                Utility:Create("UICorner", {
+                    Parent = inputBg,
+                    CornerRadius = UDim.new(0, 4)
+                })
+                
+                -- Input box
+                local inputBox = Utility:Create("TextBox", {
+                    Name = "InputBox",
+                    Parent = inputBg,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 5, 0, 0),
+                    Size = UDim2.new(1, -10, 1, 0),
+                    Font = Enum.Font.Gotham,
+                    Text = "255",
+                    TextColor3 = NeonSpace.Theme.Text,
+                    TextSize = 14,
+                    ClipsDescendants = true
+                })
+                
+                -- Store input box
+                rgbInputs[i] = inputBox
+            end
+            
+            -- Apply button
+            local applyButton = Utility:Create("TextButton", {
+                Name = "ApplyButton",
+                Parent = pickerContainer,
+                BackgroundColor3 = NeonSpace.Theme.Accent,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0.5, -50, 1, -30),
+                Size = UDim2.new(0, 100, 0, 20),
+                Font = Enum.Font.GothamSemibold,
+                Text = "Apply",
+                TextColor3 = Color3.fromRGB(20, 20, 20),
+                TextSize = 14,
+                AutoButtonColor = false
+            })
+            
+            -- Rounded corners for apply button
+            Utility:Create("UICorner", {
+                Parent = applyButton,
+                CornerRadius = UDim.new(0, 4)
+            })
+            
+            -- Button hover effect
+            applyButton.MouseEnter:Connect(function()
+                Utility:Tween(applyButton, {BackgroundTransparency = 0.2}, 0.2)
+            end)
+            
+            applyButton.MouseLeave:Connect(function()
+                Utility:Tween(applyButton, {BackgroundTransparency = 0}, 0.2)
+            end)
+            
+            -- Convert HSV to RGB
+            local function hsvToRgb(h, s, v)
+                local r, g, b
+                
+                local i = math.floor(h * 6)
+                local f = h * 6 - i
+                local p = v * (1 - s)
+                local q = v * (1 - f * s)
+                local t = v * (1 - (1 - f) * s)
+                
+                i = i % 6
+                
+                if i == 0 then r, g, b = v, t, p
+                elseif i == 1 then r, g, b = q, v, p
+                elseif i == 2 then r, g, b = p, v, t
+                elseif i == 3 then r, g, b = p, q, v
+                elseif i == 4 then r, g, b = t, p, v
+                elseif i == 5 then r, g, b = v, p, q
+                end
+                
+                return Color3.fromRGB(r * 255, g * 255, b * 255)
+            end
+            
+            -- Convert RGB to HSV
+            local function rgbToHsv(color)
+                local r, g, b = color.R, color.G, color.B
+                local max, min = math.max(r, g, b), math.min(r, g, b)
+                local h, s, v
+                
+                v = max
+                
+                local d = max - min
+                if max == 0 then
+                    s = 0
+                else
+                    s = d / max
+                end
+                
+                if max == min then
+                    h = 0
+                else
+                    if max == r then
+                        h = (g - b) / d
+                        if g < b then
+                            h = h + 6
+                        end
+                    elseif max == g then
+                        h = (b - r) / d + 2
+                    elseif max == b then
+                        h = (r - g) / d + 4
+                    end
+                    h = h / 6
+                end
+                
+                return h, s, v
+            end
+            
+            -- Update color from HSV
+            local function updateColor()
+                -- Get current HSV values
+                local h, s, v = rgbToHsv(colorPicker.Value)
+                
+                -- Update color display
+                colorDisplay.BackgroundColor3 = colorPicker.Value
+                
+                -- Update RGB inputs
+                rgbInputs[1].Text = math.floor(colorPicker.Value.R * 255 + 0.5)
+                rgbInputs[2].Text = math.floor(colorPicker.Value.G * 255 + 0.5)
+                rgbInputs[3].Text = math.floor(colorPicker.Value.B * 255 + 0.5)
+                
+                -- Update saturation/value selector position
+                svSelector.Position = UDim2.new(s, 0, 1 - v, 0)
+                
+                -- Update saturation/value background color
+                saturationValue.BackgroundColor3 = hsvToRgb(h, 1, 1)
+                
+                -- Update hue selector position
+                hueSelector.Position = UDim2.new(0.5, 0, h, 0)
+            end
+            
+            -- Initialize color
+            updateColor()
+            
+            -- Toggle color picker
+            function colorPicker:Toggle()
+                colorPicker.Open = not colorPicker.Open
+                
+                -- Show/hide picker
+                pickerContainer.Visible = colorPicker.Open
+                
+                -- Update frame size
+                Utility:Tween(colorFrame, {
+                    Size = UDim2.new(1, 0, 0, colorPicker.Open and 235 or 40)
+                }, 0.2)
+            end
+            
+            -- Color display click
+            colorDisplay.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    colorPicker:Toggle()
+                end
+            end)
+            
+            -- Saturation/value interaction
+            saturationValue.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    -- Track mouse
+                    local connection
+                    connection = game:GetService("UserInputService").InputChanged:Connect(function(newInput)
+                        if newInput.UserInputType == Enum.UserInputType.MouseMovement then
+                            -- Calculate saturation and value from mouse position
+                            local offsetX = math.clamp(newInput.Position.X - saturationValue.AbsolutePosition.X, 0, saturationValue.AbsoluteSize.X) / saturationValue.AbsoluteSize.X
+                            local offsetY = math.clamp(newInput.Position.Y - saturationValue.AbsolutePosition.Y, 0, saturationValue.AbsoluteSize.Y) / saturationValue.AbsoluteSize.Y
+                            
+                            -- Get current HSV
+                            local h = hueSelector.Position.Y.Scale
+                            local s = offsetX
+                            local v = 1 - offsetY
+                            
+                            -- Update position
+                            svSelector.Position = UDim2.new(s, 0, offsetY, 0)
+                            
+                            -- Update color
+                            colorPicker.Value = hsvToRgb(h, s, v)
+                            colorDisplay.BackgroundColor3 = colorPicker.Value
+                            
+                            -- Update RGB inputs
+                            rgbInputs[1].Text = math.floor(colorPicker.Value.R * 255 + 0.5)
+                            rgbInputs[2].Text = math.floor(colorPicker.Value.G * 255 + 0.5)
+                            rgbInputs[3].Text = math.floor(colorPicker.Value.B * 255 + 0.5)
+                        end
+                    end)
+                    
+                    -- Stop tracking when mouse button is released
+                    game:GetService("UserInputService").InputEnded:Connect(function(newInput)
+                        if newInput.UserInputType == Enum.UserInputType.MouseButton1 then
+                            if connection then
+                                connection:Disconnect()
+                            end
+                        end
+                    end)
+                    
+                    -- Initial update
+                    local offsetX = math.clamp(input.Position.X - saturationValue.AbsolutePosition.X, 0, saturationValue.AbsoluteSize.X) / saturationValue.AbsoluteSize.X
+                    local offsetY = math.clamp(input.Position.Y - saturationValue.AbsolutePosition.Y, 0, saturationValue.AbsoluteSize.Y) / saturationValue.AbsoluteSize.Y
+                    
+                    -- Get current hue
+                    local h = hueSelector.Position.Y.Scale
+                    local s = offsetX
+                    local v = 1 - offsetY
+                    
+                    -- Update position
+                    svSelector.Position = UDim2.new(s, 0, offsetY, 0)
+                    
+                    -- Update color
+                    colorPicker.Value = hsvToRgb(h, s, v)
+                    colorDisplay.BackgroundColor3 = colorPicker.Value
+                    
+                    -- Update RGB inputs
+                    rgbInputs[1].Text = math.floor(colorPicker.Value.R * 255 + 0.5)
+                    rgbInputs[2].Text = math.floor(colorPicker.Value.G * 255 + 0.5)
+                    rgbInputs[3].Text = math.floor(colorPicker.Value.B * 255 + 0.5)
+                end
+            end)
+            
+            -- Hue slider interaction
+            hueSlider.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    -- Track mouse
+                    local connection
+                    connection = game:GetService("UserInputService").InputChanged:Connect(function(newInput)
+                        if newInput.UserInputType == Enum.UserInputType.MouseMovement then
+                            -- Calculate hue from mouse position
+                            local offsetY = math.clamp(newInput.Position.Y - hueSlider.AbsolutePosition.Y, 0, hueSlider.AbsoluteSize.Y) / hueSlider.AbsoluteSize.Y
+                            
+                            -- Update position
+                            hueSelector.Position = UDim2.new(0.5, 0, offsetY, 0)
+                            
+                            -- Get current saturation and value
+                            local s = svSelector.Position.X.Scale
+                            local v = 1 - svSelector.Position.Y.Scale
+                            
+                            -- Update saturation/value background color
+                            saturationValue.BackgroundColor3 = hsvToRgb(offsetY, 1, 1)
+                            
+                            -- Update color
+                            colorPicker.Value = hsvToRgb(offsetY, s, v)
+                            colorDisplay.BackgroundColor3 = colorPicker.Value
+                            
+                            -- Update RGB inputs
+                            rgbInputs[1].Text = math.floor(colorPicker.Value.R * 255 + 0.5)
+                            rgbInputs[2].Text = math.floor(colorPicker.Value.G * 255 + 0.5)
+                            rgbInputs[3].Text = math.floor(colorPicker.Value.B * 255 + 0.5)
+                        end
+                    end)
+                    
+                    -- Stop tracking when mouse button is released
+                    game:GetService("UserInputService").InputEnded:Connect(function(newInput)
+                        if newInput.UserInputType == Enum.UserInputType.MouseButton1 then
+                            if connection then
+                                connection:Disconnect()
+                            end
+                        end
+                    end)
+                    
+                    -- Initial update
+                    local offsetY = math.clamp(input.Position.Y - hueSlider.AbsolutePosition.Y, 0, hueSlider.AbsoluteSize.Y) / hueSlider.AbsoluteSize.Y
+                    
+                    -- Update position
+                    hueSelector.Position = UDim2.new(0.5, 0, offsetY, 0)
+                    
+                    -- Get current saturation and value
+                    local s = svSelector.Position.X.Scale
+                    local v = 1 - svSelector.Position.Y.Scale
+                    
+                    -- Update saturation/value background color
+                    saturationValue.BackgroundColor3 = hsvToRgb(offsetY, 1, 1)
+                    
+                    -- Update color
+                    colorPicker.Value = hsvToRgb(offsetY, s, v)
+                    colorDisplay.BackgroundColor3 = colorPicker.Value
+                    
+                    -- Update RGB inputs
+                    rgbInputs[1].Text = math.floor(colorPicker.Value.R * 255 + 0.5)
+                    rgbInputs[2].Text = math.floor(colorPicker.Value.G * 255 + 0.5)
+                    rgbInputs[3].Text = math.floor(colorPicker.Value.B * 255 + 0.5)
+                end
+            end)
+            
+            -- RGB input handling
+            for i, inputBox in ipairs(rgbInputs) do
+                inputBox.FocusLost:Connect(function(enterPressed)
+                    -- Parse input value
+                    local value = tonumber(inputBox.Text)
+                    if value then
+                        value = math.clamp(math.floor(value), 0, 255)
+                        inputBox.Text = tostring(value)
+                        
+                        -- Update color from RGB values
+                        local r = tonumber(rgbInputs[1].Text) / 255
+                        local g = tonumber(rgbInputs[2].Text) / 255
+                        local b = tonumber(rgbInputs[3].Text) / 255
+                        
+                        colorPicker.Value = Color3.fromRGB(r * 255, g * 255, b * 255)
+                        
+                        -- Update display
+                        colorDisplay.BackgroundColor3 = colorPicker.Value
+                        
+                        -- Update selectors
+                        local h, s, v = rgbToHsv(colorPicker.Value)
+                        
+                        hueSelector.Position = UDim2.new(0.5, 0, h, 0)
+                        saturationValue.BackgroundColor3 = hsvToRgb(h, 1, 1)
+                        svSelector.Position = UDim2.new(s, 0, 1 - v, 0)
+                    else
+                        -- Reset to current value
+                        inputBox.Text = math.floor(colorPicker.Value[i == 1 and "R" or i == 2 and "G" or "B"] * 255 + 0.5)
+                    end
+                end)
+            end
+            
+            -- Apply button
+            applyButton.MouseButton1Click:Connect(function()
+                -- Call callback
+                if callback then
+                    callback(colorPicker.Value)
+                end
+                
+                -- Close picker
+                colorPicker:Toggle()
+            end)
+            
+            -- Set value function
+            function colorPicker:SetValue(color)
+                colorPicker.Value = color
+                updateColor()
+                
+                -- Call callback
+                if callback then
+                    callback(color)
+                end
+            end
+            
+            colorPicker.Instance = colorFrame
+            table.insert(section.Elements, colorPicker)
+            return colorPicker
+        end
+        
+        table.insert(window.Sections, section)
+        return section
+    end
+    
+    -- Tab selection
+    function self:SelectWindow(window)
+        -- De-select current window
+        for _, win in ipairs(self.Windows) do
+            if win.Selected and win ~= window then
+                win.Selected = false
+                win.Content.Visible = false
+                
+                -- Reset button styling
+                Utility:Tween(win.Button, {BackgroundColor3 = self.Theme.DarkShade}, 0.2)
+                win.Indicator.Visible = false
+            end
+        end
+        
+        -- Select new window
+        window.Selected = true
+        window.Content.Visible = true
+        
+        -- Update button styling
+        Utility:Tween(window.Button, {BackgroundColor3 = self.Theme.Accent}, 0.2)
+        Utility:Tween(window.Button, {TextColor3 = Color3.fromRGB(20, 20, 20)}, 0.2)
+        window.Indicator.Visible = true
+        Utility:Tween(window.Indicator, {Size = UDim2.new(0, 3, 0.7, 0)}, 0.2)
+    end
+    
+    -- Make sure there's at least one window
+    if #self.Windows > 0 then
+        self:SelectWindow(self.Windows[1])
+    end
+    
+    -- Notification function
+    function self:Notify(title, message, duration)
+        duration = duration or 3
+        
+        -- Create notification container if it doesn't exist
+        if not self.NotificationContainer then
+            self.NotificationContainer = Utility:Create("Frame", {
+                Name = "NotificationContainer",
+                Parent = self.ScreenGui,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(1, -20, 0, 20),
+                Size = UDim2.new(0, 300, 1, -40),
+                AnchorPoint = Vector2.new(1, 0)
+            })
+            
+            -- Notification list layout
+            Utility:Create("UIListLayout", {
+                Parent = self.NotificationContainer,
+                HorizontalAlignment = Enum.HorizontalAlignment.Center,
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                VerticalAlignment = Enum.VerticalAlignment.Top,
+                Padding = UDim.new(0, 10)
+            })
+        end
+        
+        -- Create notification frame
+        local notification = Utility:Create("Frame", {
+            Name = "Notification",
+            Parent = self.NotificationContainer,
+            BackgroundColor3 = self.Theme.Background,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 0, 80),
+            BackgroundTransparency = 1, -- Start transparent for animation
+            Position = UDim2.new(1, 0, 0, 0), -- Start off-screen
+            AnchorPoint = Vector2.new(0, 0)
+        })
+        
+        -- Add rounded corners
+        Utility:Create("UICorner", {
+            Parent = notification,
+            CornerRadius = UDim.new(0, 8)
+        })
+        
+        -- Add glow effect
+        local glow = Utility:Create("ImageLabel", {
+            Name = "Glow",
+            Parent = notification,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Size = UDim2.new(1.1, 0, 1.2, 0),
+            ZIndex = 0,
+            Image = "rbxassetid://4996891970", -- Radial gradient
+            ImageColor3 = self.Theme.Accent,
+            ImageTransparency = 0.9
+        })
+        
+        -- Title
+        Utility:Create("TextLabel", {
+            Name = "Title",
+            Parent = notification,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 15, 0, 10),
+            Size = UDim2.new(1, -30, 0, 25),
+            Font = Enum.Font.GothamBold,
+            Text = title,
+            TextColor3 = self.Theme.Accent,
+            TextSize = 16,
+            TextXAlignment = Enum.TextXAlignment.Left
+        })
+        
+        -- Message
+        Utility:Create("TextLabel", {
+            Name = "Message",
+            Parent = notification,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 15, 0, 35),
+            Size = UDim2.new(1, -30, 0, 35),
+            Font = Enum.Font.Gotham,
+            Text = message,
+            TextColor3 = self.Theme.Text,
+            TextSize = 14,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextYAlignment = Enum.TextYAlignment.Top,
+            TextWrapped = true
+        })
+        
+        -- Progress bar background
+        local progressBg = Utility:Create("Frame", {
+            Name = "ProgressBackground",
+            Parent = notification,
+            BackgroundColor3 = self.Theme.DarkShade,
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 0, 1, -4),
+            Size = UDim2.new(1, 0, 0, 4),
+            AnchorPoint = Vector2.new(0, 0)
+        })
+        
+        -- Progress bar
+        local progressBar = Utility:Create("Frame", {
+            Name = "ProgressBar",
+            Parent = progressBg,
+            BackgroundColor3 = self.Theme.Accent,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 1, 0)
+        })
+        
+        -- Animate in
+        Utility:Tween(notification, {Position = UDim2.new(0, 0, 0, 0), BackgroundTransparency = 0}, 0.3, Enum.EasingStyle.Back)
+        
+        -- Animate progress bar
+        Utility:Tween(progressBar, {Size = UDim2.new(0, 0, 1, 0)}, duration, Enum.EasingStyle.Linear)
+        
+        -- Remove after duration
+        spawn(function()
+            wait(duration)
+            Utility:Tween(notification, {Position = UDim2.new(1, 0, 0, 0), BackgroundTransparency = 1}, 0.3, Enum.EasingStyle.Quad)
+            wait(0.3)
+            notification:Destroy()
+        end)
+    end
+    
+    -- Cleanup function
+    function self:Destroy()
+        -- Animate out
+        Utility:Tween(self.Main, {Size = UDim2.new(0, 0, 0, 0)}, 0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+        Utility:Tween(self.Blur, {Size = 0}, 0.6)
+        
+        -- Remove after animation
+        spawn(function()
+            wait(0.6)
+            self.ScreenGui:Destroy()
+            self.Blur:Destroy()
+        end)
+    end
+    
+    return window
+end
+
+-- Initialize
+function NeonSpace:Init()
+    -- This function can be used for any initialization needed
+    return self
+end
+
+-- Return the library
+return NeonSpace:Init()
